@@ -1,17 +1,18 @@
+import logging
+from dotenv import load_dotenv
+
+# --- Setup ---
+logging.basicConfig(level=logging.INFO)
+load_dotenv()
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from pymongo import MongoClient
-from dotenv import load_dotenv
-import hashlib, os, json, logging
+import hashlib, os, json
 from datetime import datetime, timezone
 from typing import Literal, List, Optional
 from google import genai
-
-# --- Setup ---
-logging.basicConfig(level=logging.INFO)
-load_dotenv()
 
 # MongoDB URIs
 MONGO_URI = os.getenv("MONGO_URI")
