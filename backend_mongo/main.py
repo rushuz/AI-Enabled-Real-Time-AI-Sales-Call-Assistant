@@ -14,6 +14,11 @@ from datetime import datetime, timezone
 from typing import Literal, List, Optional
 from google import genai
 
+client_login = None
+client_transcript = None
+users_collection = None
+transcripts_collection = None
+
 # MongoDB URIs
 MONGO_URI = os.getenv("MONGO_URI")
 MONGO_URI_1 = os.getenv("MONGO_URI_1")
@@ -26,18 +31,33 @@ TRANSCRIPT_DB = os.getenv("TRANSCRIPT_DB_NAME", "Transcripts")
 TRANSCRIPT_COLLECTION = os.getenv("TRANSCRIPT_COLLECTION", "UserAI")
 
 if not MONGO_URI or not MONGO_URI_1:
-    raise ValueError("MongoDB URIs missing in .env")
+    logging.error("❌ MongoDB URIs missing in .env")
 
 client_gen = genai.Client(api_key=GOOGLE_API_KEY)
-client_login = MongoClient(MONGO_URI)
-login_db = client_login[LOGIN_DB]
-users_collection = login_db[LOGIN_COLLECTION]
+# # client_login = MongoClient(MONGO_URI)
+# login_db = client_login[LOGIN_DB]
+# users_collection = login_db[LOGIN_COLLECTION]
 
-client_transcript = MongoClient(MONGO_URI_1)
-transcript_db = client_transcript[TRANSCRIPT_DB]
-transcripts_collection = transcript_db[TRANSCRIPT_COLLECTION]
+# # client_transcript = MongoClient(MONGO_URI_1)
+# transcript_db = client_transcript[TRANSCRIPT_DB]
+# transcripts_collection = transcript_db[TRANSCRIPT_COLLECTION]
 
 app = FastAPI()
+@app.on_event("startup")
+def startup_event():
+    global client_login, client_transcript
+    global users_collection, transcripts_collection
+
+    client_login = MongoClient(MONGO_URI)
+    login_db = client_login[LOGIN_DB]
+    users_collection = login_db[LOGIN_COLLECTION]
+
+    client_transcript = MongoClient(MONGO_URI_1)
+    transcript_db = client_transcript[TRANSCRIPT_DB]
+    transcripts_collection = transcript_db[TRANSCRIPT_COLLECTION]
+
+    logging.info("✅ MongoDB connected successfully")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

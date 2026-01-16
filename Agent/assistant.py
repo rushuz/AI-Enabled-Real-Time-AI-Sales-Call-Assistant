@@ -5,9 +5,15 @@ import asyncio
 import logging
 import httpx
 import time
-
-from livekit import agents
-from livekit.agents import AgentSession, Agent, RoomInputOptions, UserInputTranscribedEvent
+from livekit.agents import (
+    AgentSession,
+    Agent,
+    RoomInputOptions,
+    UserInputTranscribedEvent,
+    JobContext,
+    WorkerOptions,
+    cli,
+)
 from livekit.plugins import deepgram, silero, google
 
 # ------------------------------------------------------
@@ -52,13 +58,14 @@ Be conversational, listen actively, and adapt to the customer's tone. If they se
                 if response.status_code != 200:
                     logging.warning(f"⚠️ FastAPI error: {response.text}")
         except Exception as e:
-            logging.error(f"❌ Error sending to FastAPI: {e}")
+            logging.exception("Error sending to FastAPI")
+
 
 
 # ------------------------------------------------------
 # Entrypoint for LiveKit Agent
 # ------------------------------------------------------
-async def entrypoint(ctx: agents.JobContext):
+async def entrypoint(ctx: JobContext):
     assistant = Assistant()
 
     session = AgentSession(
@@ -120,33 +127,33 @@ async def entrypoint(ctx: agents.JobContext):
     # Initial spoken greeting
     await session.say("Hello! This is Alex calling from TechPro Solutions. I hope I'm not catching you at a bad time. I see you recently showed interest in our laptop collection. I'd love to help you find the perfect device for your needs. Do you have a few minutes to chat?")
 
-    # ------------------------------------------------------
-    # Main loop — listen & respond
-    # ------------------------------------------------------
-    while True:
-        user_input = await session.listen()
-        if not user_input or not user_input.text.strip():
-            continue
+    # # ------------------------------------------------------
+    # # Main loop — listen & respond
+    # # ------------------------------------------------------
+    # while True:
+    #     user_input = await session.listen()
+    #     if not user_input or not user_input.text.strip():
+    #         continue
 
-        # Store user transcript
-        await assistant.send_transcript_to_fastapi(user_input.text, ctx.room.name, "user")
+    #     # Store user transcript
+    #     await assistant.send_transcript_to_fastapi(user_input.text, ctx.room.name, "user")
 
-        # Generate AI reply
-        ai_reply = await session.generate_reply(instructions=user_input.text)
+    #     # Generate AI reply
+    #     ai_reply = await session.generate_reply(instructions=user_input.text)
 
-        # Speak reply
-        await session.say(ai_reply)
+    #     # Speak reply
+    #     await session.say(ai_reply)
 
-        # Store assistant reply
-        await assistant.send_transcript_to_fastapi(ai_reply, ctx.room.name, "assistant")
+    #     # Store assistant reply
+    #     await assistant.send_transcript_to_fastapi(ai_reply, ctx.room.name, "assistant")
 
 
 # ------------------------------------------------------
 # Run worker
 # ------------------------------------------------------
 if __name__ == "__main__":
-    agents.cli.run_app(
-        agents.WorkerOptions(
+    cli.run_app(
+        WorkerOptions(
             entrypoint_fnc=entrypoint,
             api_key=os.getenv("LIVEKIT_API_KEY"),
             api_secret=os.getenv("LIVEKIT_API_SECRET"),
